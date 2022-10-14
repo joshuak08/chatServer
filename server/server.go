@@ -40,10 +40,10 @@ func handleClient(client net.Conn, clientid int, msgs chan Message) {
 	reader := bufio.NewReader(client)
 	for {
 		msg, err := reader.ReadString('\n')
-		if err != nil {
-			break
-		}
-		msgs <- Message{clientid, msg}
+		handleError(err)
+		fmt.Println(msg)
+		message := Message{clientid, msg}
+		msgs <- message
 	}
 }
 
@@ -63,7 +63,7 @@ func main() {
 	//Create a mapping of IDs to connections
 	clients := make(map[int]net.Conn)
 
-	n := 0
+	clientID := 0
 	//Start accepting connections
 	go acceptConns(ln, conns)
 	for {
@@ -74,15 +74,15 @@ func main() {
 			// - add the client to the clients channel
 			// - start to asynchronously handle messages from this client
 			client := conn
-			clients[n] = conn
-			go handleClient(client, n, msgs)
-			n++
+			clients[clientID] = conn
+			go handleClient(client, clientID, msgs)
+			clientID++
 		case msg := <-msgs:
 			//TODO Deal with a new message
 			// Send the message to all clients that aren't the sender
 			for i, client := range clients {
 				if msg.sender != i {
-					fmt.Fprintln(client, msg.message)
+					fmt.Fprintf(client, msg.message)
 				}
 			}
 		}
